@@ -50,11 +50,23 @@ def avaliar(processo: dict, regras: dict | None = None) -> tuple[str, list[str]]
                 acertos.append(f"código TPU {codigo} ({assunto.get('nome')})")
             elif any(re.search(p, nome) for p in padroes):
                 acertos.append(f"assunto correspondeu a padrão: {assunto.get('nome')!r}")
+        nomes_avaliaveis = [a.get("nome", "") for a in assuntos if (a.get("nome") or "").strip()]
         if acertos:
             motivos.extend(acertos)
+        elif not nomes_avaliaveis and not codigos_aceitos:
+            # Sem nome de assunto avaliável (lista vazia ou só códigos) e sem
+            # lista de códigos configurada: não exclui — a TPU é preenchida de
+            # forma inconsistente e o filtro estrutural não pode gerar falso
+            # negativo sozinho (PRD §7/§13). A camada semântica decide depois.
+            motivos.append(
+                "assuntos sem nome avaliável ("
+                + (f"{len(assuntos)} código(s) sem nome" if assuntos else "lista vazia")
+                + ") — mantido para não gerar falso negativo por TPU inconsistente"
+            )
         else:
             aprovado = False
-            nomes = [a.get("nome", "") for a in assuntos] or ["(sem assuntos registrados)"]
+            nomes = nomes_avaliaveis or [str(a.get("codigo", "?")) for a in assuntos] \
+                or ["(sem assuntos registrados)"]
             motivos.append(f"nenhum assunto correspondeu aos critérios: {nomes}")
 
     return ("incluido" if aprovado else "excluido"), motivos

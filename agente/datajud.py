@@ -36,13 +36,25 @@ def construir_consulta(
     codigos = filtros.get("assuntos_codigos_incluir") or []
     padroes = filtros.get("assuntos_padroes_incluir") or []
     if codigos or padroes:
-        should = []
-        if codigos:
-            should.append({"terms": {"assuntos.codigo": codigos}})
         # match_phrase (frase exata) sobre o nome do assunto: um `match` simples
         # casaria qualquer palavra solta do termo (inclusive "de") e devolveria
-        # um universo quase aleatório. A análise fina (regex) é refeita
-        # localmente pelo pré-filtro estrutural sobre os dados retornados.
+        # um universo quase aleatório. Cada critério entra em duas variantes —
+        # consulta direta e consulta `nested` (com ignore_unmapped) — porque o
+        # mapeamento do campo `assuntos` pode ser objeto plano ou nested
+        # conforme o índice; a variante que não se aplica é ignorada sem erro.
+        # A análise fina (regex) é refeita localmente pelo pré-filtro.
+        should = []
+
+        def _dupla(consulta_interna: dict) -> None:
+            should.append(consulta_interna)
+            should.append({"nested": {
+                "path": "assuntos",
+                "ignore_unmapped": True,
+                "query": consulta_interna,
+            }})
+
+        if codigos:
+            _dupla({"terms": {"assuntos.codigo": codigos}})
         for padrao in padroes:
             termo_simples = (
                 padrao.replace("[cç]", "ç")
@@ -50,7 +62,7 @@ def construir_consulta(
                 .replace("[ií]", "í")
                 .replace("[eé]", "é")
             )
-            should.append({"match_phrase": {"assuntos.nome": termo_simples}})
+            _dupla({"match_phrase": {"assuntos.nome": termo_simples}})
         must.append({"bool": {"should": should, "minimum_should_match": 1}})
 
     janela = filtros.get("janela_temporal") or {}
@@ -124,11 +136,18 @@ def normalizar_fonte(fonte: dict) -> dict:
     assuntos_brutos = fonte.get("assuntos") or []
     assuntos = []
     for item in assuntos_brutos:
-        # Em algumas respostas os assuntos vêm aninhados em listas.
+        # Em algumas respostas os assuntos vêm aninhados em listas; em outras,
+        # como códigos soltos (int/str) sem o nome da TPU.
         if isinstance(item, list):
-            assuntos.extend(a for a in item if isinstance(a, dict))
+            for sub in item:
+                if isinstance(sub, dict):
+                    assuntos.append(sub)
+                elif isinstance(sub, (int, str)):
+                    assuntos.append({"codigo": str(sub), "nome": ""})
         elif isinstance(item, dict):
             assuntos.append(item)
+        elif isinstance(item, (int, str)):
+            assuntos.append({"codigo": str(item), "nome": ""})
     orgao = fonte.get("orgaoJulgador") or {}
     return {
         "numero": fonte.get("numeroProcesso", ""),

@@ -120,6 +120,8 @@ class Manipulador(SimpleHTTPRequestHandler):
                     return self._json(pipeline.casos_deduplicados(con))
                 if rota == "/api/diagnostico":
                     return self._json(pipeline.diagnostico_base(con))
+                if rota == "/api/diagnostico/relatorio":
+                    return self._json({"texto": pipeline.relatorio_diagnostico(con)})
                 if rota == "/api/metricas":
                     return self._json(metricas.calcular(con))
                 if rota == "/api/auditoria":

@@ -72,6 +72,28 @@ class TestFiltroEstrutural(unittest.TestCase):
         self.assertEqual(resultado, "excluido")
         self.assertTrue(any("classe" in m for m in motivos))
 
+    def test_assunto_sem_nome_avaliavel_nao_gera_falso_negativo(self):
+        processo = {
+            "classe_nome": "Recurso de Revista",
+            "assuntos": [{"codigo": "12345", "nome": ""}],
+        }
+        resultado, motivos = filtros.avaliar(processo)
+        self.assertEqual(resultado, "incluido",
+                         "código sem nome não pode excluir sozinho (PRD §7): "
+                         + str(motivos))
+        self.assertTrue(any("sem nome avaliável" in m for m in motivos))
+
+    def test_normalizacao_de_assuntos_como_codigos_soltos(self):
+        norm = datajud.normalizar_fonte({
+            "numeroProcesso": "00011112220235040001",
+            "tribunal": "TST", "grau": "SUP",
+            "classe": {"codigo": 1, "nome": "Recurso de Revista"},
+            "assuntos": [55220, "2546"],
+            "orgaoJulgador": {"nome": "X"},
+        })
+        self.assertEqual(norm["assuntos"], [
+            {"codigo": "55220", "nome": ""}, {"codigo": "2546", "nome": ""}])
+
 
 class TestClassificadorSemantico(unittest.TestCase):
     def test_rotulos_esperados_dos_textos_sinteticos(self):
@@ -117,10 +139,17 @@ class TestConsultaDataJud(unittest.TestCase):
         self.assertTrue(any("range" in c and "dataAjuizamento" in c["range"]
                             for c in clausulas), "janela temporal ausente")
         clausula_assuntos = next(c for c in clausulas if "bool" in c)
-        for should in clausula_assuntos["bool"]["should"]:
-            self.assertIn("match_phrase", should,
-                          "assuntos devem usar frase exata (match_phrase), "
-                          "não match por palavras soltas")
+        variantes = clausula_assuntos["bool"]["should"]
+        planas = [v for v in variantes if "match_phrase" in v]
+        aninhadas = [v for v in variantes if "nested" in v]
+        self.assertTrue(planas, "faltou a variante direta (match_phrase)")
+        self.assertTrue(aninhadas, "faltou a variante nested (mapeamento aninhado)")
+        for v in aninhadas:
+            self.assertEqual(v["nested"]["path"], "assuntos")
+            self.assertTrue(v["nested"]["ignore_unmapped"],
+                            "nested sem ignore_unmapped erraria em mapeamento plano")
+        self.assertNotIn("match", [list(v)[0] for v in variantes],
+                         "match por palavras soltas não deve voltar")
         incremental = datajud.construir_consulta(
             regras, apos_timestamp="2024-01-01T00:00:00Z")
         self.assertTrue(any("range" in c and "@timestamp" in c.get("range", {})

@@ -279,6 +279,63 @@ def diagnostico_base(con, topo: int = 15) -> dict:
     }
 
 
+def relatorio_diagnostico(con) -> str:
+    """Relatório em texto para depuração remota da calibração dos filtros.
+
+    Reúne versão, últimas sessões (com a consulta exata enviada ao DataJud),
+    distribuições da base e amostras reais de registros incluídos/excluídos
+    com seus motivos — tudo copiável em um bloco só.
+    """
+    linhas = [
+        "=== RELATÓRIO DE DIAGNÓSTICO DO AGENTE ===",
+        f"pipeline: v{config.VERSAO_PIPELINE} | hash config: {config.hash_configuracao()}",
+        "",
+        "--- Últimas sessões de busca ---",
+    ]
+    sessoes = con.execute(
+        "SELECT * FROM sessoes_busca ORDER BY id DESC LIMIT 3").fetchall()
+    if not sessoes:
+        linhas.append("(nenhuma sessão registrada)")
+    for s in sessoes:
+        linhas.append(
+            f"sessão {s['id']} ({s['tipo']}) {s['iniciada_em']} {s['tribunal']}"
+            f" status={s['status']} retornados={s['total_retornados']}"
+            f" novos={s['total_novos']} erro={s['erro'] or '-'}")
+        linhas.append(f"  consulta enviada: {s['consulta_json']}")
+
+    diag = diagnostico_base(con)
+    linhas += [
+        "",
+        "--- Base ---",
+        f"total de processos: {diag['total_processos']}",
+        f"filtro estrutural vigente: {json.dumps(diag['filtro_estrutural_vigente'])}",
+        f"motivos de exclusão: {json.dumps(diag['motivos_de_exclusao'])}",
+        "classes mais frequentes: " + json.dumps(
+            diag["classes_mais_frequentes"], ensure_ascii=False),
+        "assuntos mais frequentes: " + json.dumps(
+            diag["assuntos_mais_frequentes"], ensure_ascii=False),
+        "",
+        "--- Amostras reais (metadados + decisão do filtro) ---",
+    ]
+    amostras = con.execute("""
+        SELECT p.numero_formatado, p.classe_nome, p.grau, p.assuntos_json,
+               c.resultado, c.motivos_json
+        FROM processos p JOIN classificacoes c ON c.processo_id = p.id
+        WHERE c.camada = 'estrutural'
+          AND c.id = (SELECT MAX(c2.id) FROM classificacoes c2
+                      WHERE c2.processo_id = p.id AND c2.camada = 'estrutural')
+        ORDER BY (c.resultado = 'excluido'), p.id LIMIT 6
+    """).fetchall()
+    if not amostras:
+        linhas.append("(base vazia)")
+    for a in amostras:
+        linhas.append(
+            f"[{a['resultado']}] {a['numero_formatado']} | classe={a['classe_nome']!r}"
+            f" grau={a['grau']} | assuntos={a['assuntos_json']}")
+        linhas.append(f"  motivos: {a['motivos_json']}")
+    return "\n".join(linhas)
+
+
 def casos_deduplicados(con) -> list[dict]:
     """Agrupa aparições pelo número CNJ e elege a aparição canônica (dedup)."""
     linhas = [dict(l) for l in con.execute("SELECT * FROM processos").fetchall()]

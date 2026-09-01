@@ -140,7 +140,9 @@
       preservado na auditoria).</p>
     <button class="acao" id="btn-diagnostico" style="background:#5a5347">Atualizar diagnóstico</button>
     <button class="acao" id="btn-reaplicar">Reaplicar filtro estrutural</button>
+    <button class="acao" id="btn-relatorio" style="background:#8a4b23">Gerar relatório p/ suporte (copiável)</button>
     <div class="saida" id="d-saida"></div>
+    <pre id="d-relatorio" style="display:none"></pre>
     <div class="lado-a-lado" style="margin-top:12px">
       <div><h3 style="font-size:14px;margin:4px 0">Classes mais frequentes</h3>
         <div class="tabela-rolagem"><table id="tab-diag-classes">
@@ -360,6 +362,15 @@ async function carregarDiagnostico(){
   }catch(e){ $('#d-saida').textContent = 'Erro: '+e.message; }
 }
 $('#btn-diagnostico').onclick = carregarDiagnostico;
+$('#btn-relatorio').onclick = async () => {
+  try{
+    const r = await api('/api/diagnostico/relatorio');
+    const pre = $('#d-relatorio'); pre.style.display='block'; pre.textContent = r.texto;
+    try{ await navigator.clipboard.writeText(r.texto);
+         $('#d-saida').textContent = 'Relatório copiado para a área de transferência — cole na conversa de suporte.'; }
+    catch(_e){ $('#d-saida').textContent = 'Relatório gerado abaixo — selecione e copie manualmente.'; }
+  }catch(e){ $('#d-saida').textContent = 'Erro: '+e.message; }
+};
 $('#btn-reaplicar').onclick = () => executar('#btn-reaplicar','/api/filtro/reaplicar',{},
   '#d-saida', ()=>{carregarProcessos(); carregarDiagnostico();});
 
