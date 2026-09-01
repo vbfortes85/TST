@@ -39,7 +39,9 @@ def construir_consulta(
         should = []
         if codigos:
             should.append({"terms": {"assuntos.codigo": codigos}})
-        # match sobre o nome do assunto: a análise fina (regex) é refeita
+        # match_phrase (frase exata) sobre o nome do assunto: um `match` simples
+        # casaria qualquer palavra solta do termo (inclusive "de") e devolveria
+        # um universo quase aleatório. A análise fina (regex) é refeita
         # localmente pelo pré-filtro estrutural sobre os dados retornados.
         for padrao in padroes:
             termo_simples = (
@@ -48,7 +50,7 @@ def construir_consulta(
                 .replace("[ií]", "í")
                 .replace("[eé]", "é")
             )
-            should.append({"match": {"assuntos.nome": termo_simples}})
+            should.append({"match_phrase": {"assuntos.nome": termo_simples}})
         must.append({"bool": {"should": should, "minimum_should_match": 1}})
 
     janela = filtros.get("janela_temporal") or {}

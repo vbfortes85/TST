@@ -132,6 +132,25 @@
     </div>
   </div>
   <div class="cartao">
+    <h2>Diagnóstico da base (para calibrar os filtros com dados reais)</h2>
+    <p style="font-size:13px">Mostra o que de fato veio do DataJud e por que as
+      exclusões estruturais aconteceram. Depois de ajustar
+      <code>config/filtros_estruturais.json</code>, use o botão ao lado para
+      reavaliar a base inteira <b>sem recoletar</b> (o histórico de decisões é
+      preservado na auditoria).</p>
+    <button class="acao" id="btn-diagnostico" style="background:#5a5347">Atualizar diagnóstico</button>
+    <button class="acao" id="btn-reaplicar">Reaplicar filtro estrutural</button>
+    <div class="saida" id="d-saida"></div>
+    <div class="lado-a-lado" style="margin-top:12px">
+      <div><h3 style="font-size:14px;margin:4px 0">Classes mais frequentes</h3>
+        <div class="tabela-rolagem"><table id="tab-diag-classes">
+          <thead><tr><th>Classe</th><th>Qtde</th></tr></thead><tbody></tbody></table></div></div>
+      <div><h3 style="font-size:14px;margin:4px 0">Assuntos mais frequentes</h3>
+        <div class="tabela-rolagem"><table id="tab-diag-assuntos">
+          <thead><tr><th>Assunto</th><th>Qtde</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+  </div>
+  <div class="cartao">
     <h2>Casos deduplicados (mesmo processo em instâncias diferentes)</h2>
     <div class="tabela-rolagem"><table id="tab-casos"><thead><tr>
       <th>Nº CNJ</th><th>Grau canônico</th><th>Aparições</th>
@@ -229,7 +248,7 @@ abas.forEach(b => b.onclick = () => {
   b.classList.add('ativa');
   document.getElementById(b.dataset.aba).classList.add('ativa');
   if (b.dataset.aba === 'painel') carregarPainel();
-  if (b.dataset.aba === 'base') { carregarProcessos(); carregarCasos(); }
+  if (b.dataset.aba === 'base') { carregarProcessos(); carregarCasos(); carregarDiagnostico(); }
   if (b.dataset.aba === 'validacao') { carregarMetricas(); carregarRevisao(); }
   if (b.dataset.aba === 'aud') carregarAuditoria();
 });
@@ -323,6 +342,27 @@ async function carregarProcessos(){
     <td>${l.score??'—'}</td><td>${selo(l.documento)}</td><td>${motivosHtml(l)}</td>
   </tr>`).join('') || '<tr><td colspan="10">Base vazia — execute a coleta na aba 1.</td></tr>';
 }
+async function carregarDiagnostico(){
+  try{
+    const d = await api('/api/diagnostico');
+    $('#d-saida').innerHTML = `<b>${d.total_processos}</b> processos ·
+      filtro estrutural vigente: ${Object.entries(d.filtro_estrutural_vigente)
+        .map(([k,v])=>`${selo(k)} ${v}`).join(' · ')} ·
+      exclusões por: classe ${d.motivos_de_exclusao.classe},
+      assunto ${d.motivos_de_exclusao.assunto},
+      ambos ${d.motivos_de_exclusao.classe_e_assunto}`;
+    $('#tab-diag-classes tbody').innerHTML = d.classes_mais_frequentes
+      .map(c=>`<tr><td>${esc(c.classe_nome)}</td><td>${c.n}</td></tr>`).join('')
+      || '<tr><td colspan="2">—</td></tr>';
+    $('#tab-diag-assuntos tbody').innerHTML = d.assuntos_mais_frequentes
+      .map(a=>`<tr><td>${esc(a.assunto)}</td><td>${a.n}</td></tr>`).join('')
+      || '<tr><td colspan="2">—</td></tr>';
+  }catch(e){ $('#d-saida').textContent = 'Erro: '+e.message; }
+}
+$('#btn-diagnostico').onclick = carregarDiagnostico;
+$('#btn-reaplicar').onclick = () => executar('#btn-reaplicar','/api/filtro/reaplicar',{},
+  '#d-saida', ()=>{carregarProcessos(); carregarDiagnostico();});
+
 async function carregarCasos(){
   const casos = await api('/api/casos');
   $('#tab-casos tbody').innerHTML = casos.map(c=>`<tr>

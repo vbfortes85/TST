@@ -11,7 +11,7 @@ import json
 import os
 from pathlib import Path
 
-VERSAO_PIPELINE = "0.1.0"
+VERSAO_PIPELINE = "0.1.1"
 
 RAIZ = Path(__file__).resolve().parent.parent
 DIR_CONFIG = RAIZ / "config"

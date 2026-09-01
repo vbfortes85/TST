@@ -197,6 +197,88 @@ def processar_dados_normalizados(con, registros: list[dict], sessao_meta: dict) 
     return {"sessao_id": sessao_id, "total_retornados": len(registros), "total_novos": novos}
 
 
+def reaplicar_filtro_estrutural(con) -> dict:
+    """Reavalia o filtro estrutural sobre TODA a base com a configuração atual.
+
+    Permite calibrar config/filtros_estruturais.json sem recoletar: cada
+    processo ganha uma nova linha de classificação (o histórico anterior é
+    preservado — a decisão vigente é sempre a mais recente).
+    """
+    regras = filtros.carregar_regras()
+    linhas = con.execute(
+        "SELECT id, classe_nome, assuntos_json FROM processos"
+    ).fetchall()
+    resumo = {"reavaliados": 0, "incluido": 0, "excluido": 0,
+              "versao_regras": regras.get("versao", "?"),
+              "hash_config": config.hash_configuracao()}
+    for linha in linhas:
+        norm = {
+            "classe_nome": linha["classe_nome"],
+            "assuntos": json.loads(linha["assuntos_json"] or "[]"),
+        }
+        resultado, motivos = filtros.avaliar(norm, regras)
+        _registrar_classificacao(con, linha["id"], "estrutural", resultado,
+                                 motivos, regras.get("versao", "?"))
+        resumo["reavaliados"] += 1
+        resumo[resultado] += 1
+    auditoria.registrar(con, "filtro_estrutural_reaplicado", resumo)
+    con.commit()
+    return resumo
+
+
+def diagnostico_base(con, topo: int = 15) -> dict:
+    """Distribuições reais da base coletada, para calibração dos filtros.
+
+    Mostra o que de fato veio do DataJud (classes e assuntos mais frequentes)
+    e por que as exclusões estruturais aconteceram (classe, assunto ou ambos).
+    """
+    classes = [dict(l) for l in con.execute(
+        """SELECT classe_nome, COUNT(*) AS n FROM processos
+           GROUP BY classe_nome ORDER BY n DESC LIMIT ?""", (topo,)).fetchall()]
+
+    contagem_assuntos: dict[str, int] = {}
+    for linha in con.execute("SELECT assuntos_json FROM processos").fetchall():
+        for assunto in json.loads(linha["assuntos_json"] or "[]"):
+            nome = assunto.get("nome") or "(sem nome)"
+            codigo = str(assunto.get("codigo") or "")
+            chave = f"{nome} [TPU {codigo}]" if codigo else nome
+            contagem_assuntos[chave] = contagem_assuntos.get(chave, 0) + 1
+    assuntos = sorted(contagem_assuntos.items(), key=lambda kv: -kv[1])[:topo]
+
+    vigentes = con.execute("""
+        SELECT c.resultado, c.motivos_json FROM classificacoes c
+        WHERE c.camada = 'estrutural'
+          AND c.id = (SELECT MAX(c2.id) FROM classificacoes c2
+                      WHERE c2.processo_id = c.processo_id
+                        AND c2.camada = 'estrutural')
+    """).fetchall()
+    resultados = {"incluido": 0, "excluido": 0}
+    motivos_exclusao = {"classe": 0, "assunto": 0, "classe_e_assunto": 0}
+    for linha in vigentes:
+        resultados[linha["resultado"]] = resultados.get(linha["resultado"], 0) + 1
+        if linha["resultado"] == "excluido":
+            motivos = json.loads(linha["motivos_json"])
+            por_classe = any(isinstance(m, str) and "fora dos padrões" in m
+                             for m in motivos)
+            por_assunto = any(isinstance(m, str) and "nenhum assunto" in m
+                              for m in motivos)
+            if por_classe and por_assunto:
+                motivos_exclusao["classe_e_assunto"] += 1
+            elif por_classe:
+                motivos_exclusao["classe"] += 1
+            elif por_assunto:
+                motivos_exclusao["assunto"] += 1
+    return {
+        "total_processos": con.execute(
+            "SELECT COUNT(*) AS n FROM processos").fetchone()["n"],
+        "classes_mais_frequentes": classes,
+        "assuntos_mais_frequentes": [
+            {"assunto": nome, "n": n} for nome, n in assuntos],
+        "filtro_estrutural_vigente": resultados,
+        "motivos_de_exclusao": motivos_exclusao,
+    }
+
+
 def casos_deduplicados(con) -> list[dict]:
     """Agrupa aparições pelo número CNJ e elege a aparição canônica (dedup)."""
     linhas = [dict(l) for l in con.execute("SELECT * FROM processos").fetchall()]

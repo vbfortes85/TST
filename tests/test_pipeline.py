@@ -116,6 +116,11 @@ class TestConsultaDataJud(unittest.TestCase):
         clausulas = consulta["query"]["bool"]["must"]
         self.assertTrue(any("range" in c and "dataAjuizamento" in c["range"]
                             for c in clausulas), "janela temporal ausente")
+        clausula_assuntos = next(c for c in clausulas if "bool" in c)
+        for should in clausula_assuntos["bool"]["should"]:
+            self.assertIn("match_phrase", should,
+                          "assuntos devem usar frase exata (match_phrase), "
+                          "não match por palavras soltas")
         incremental = datajud.construir_consulta(
             regras, apos_timestamp="2024-01-01T00:00:00Z")
         self.assertTrue(any("range" in c and "@timestamp" in c.get("range", {})
@@ -245,7 +250,21 @@ class TestPipelinePontaAPonta(unittest.TestCase):
         self.assertIn("versao_pipeline", registro)
         self.assertIn("hash_config", registro)
 
-    def test_09_caderno_tecnico_gerado_dos_registros(self):
+    def test_09_diagnostico_e_reaplicacao_do_filtro(self):
+        diagnostico = pipeline.diagnostico_base(self.con)
+        self.assertEqual(diagnostico["total_processos"], len(FIXTURES["processos"]))
+        self.assertTrue(diagnostico["classes_mais_frequentes"])
+        self.assertTrue(diagnostico["assuntos_mais_frequentes"])
+        vigente_antes = dict(diagnostico["filtro_estrutural_vigente"])
+        self.assertGreaterEqual(vigente_antes.get("excluido", 0), 1)
+
+        resumo = pipeline.reaplicar_filtro_estrutural(self.con)
+        self.assertEqual(resumo["reavaliados"], len(FIXTURES["processos"]))
+        depois = pipeline.diagnostico_base(self.con)["filtro_estrutural_vigente"]
+        self.assertEqual(depois, vigente_antes,
+                         "sem mudança de configuração, reaplicar não altera o vigente")
+
+    def test_10_caderno_tecnico_gerado_dos_registros(self):
         caminho = caderno.gerar(self.con)
         texto = Path(caminho).read_text(encoding="utf-8")
         self.assertIn("Caderno Técnico", texto)

@@ -118,6 +118,8 @@ class Manipulador(SimpleHTTPRequestHandler):
                     return self._json(_listar_processos(con, self._params()))
                 if rota == "/api/casos":
                     return self._json(pipeline.casos_deduplicados(con))
+                if rota == "/api/diagnostico":
+                    return self._json(pipeline.diagnostico_base(con))
                 if rota == "/api/metricas":
                     return self._json(metricas.calcular(con))
                 if rota == "/api/auditoria":
@@ -146,6 +148,8 @@ class Manipulador(SimpleHTTPRequestHandler):
                         incremental=bool(corpo.get("incremental", False)),
                     )
                     return self._json(resultado)
+                if rota == "/api/filtro/reaplicar":
+                    return self._json(pipeline.reaplicar_filtro_estrutural(con))
                 if rota == "/api/classificacao":
                     return self._json(pipeline.executar_classificacao_semantica(
                         con,
