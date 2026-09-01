@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/
+exports/
+docs/caderno_tecnico_rascunho.md
+nohup.out

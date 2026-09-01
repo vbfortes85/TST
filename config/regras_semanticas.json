@@ -1,0 +1,50 @@
+{
+  "versao": "0.1.0",
+  "descricao": "Regras da camada de classificação semântica (camada 4 do pipeline). Objetivo central (PRD §2 e diagrama): distinguir 'médico' como profissão da parte de 'médico' como adjetivo (atestado médico, perícia médica). Heurística transparente e auditável: cada decisão registra as regras acionadas e os trechos correspondentes. Termos derivados da lista revisada do PRD §6.1 (critério jurídico: subordinação, primazia da realidade, art. 442-B).",
+  "profissoes": [
+    "m[eé]dic[oa]s?",
+    "enfermeir[oa]s?",
+    "enfermagem",
+    "medicina"
+  ],
+  "colocacoes_negativas": [
+    "atestados? m[eé]dicos?",
+    "per[ií]cias? m[eé]dicas?",
+    "laudos? m[eé]dicos?",
+    "junta m[eé]dica",
+    "despesas m[eé]dicas",
+    "tratamento m[eé]dico",
+    "assist[eê]ncia m[eé]dica",
+    "licen[cç]a m[eé]dica",
+    "aux[ií]lio[- ]doen[cç]a",
+    "plano de sa[uú]de",
+    "erro m[eé]dico"
+  ],
+  "marcadores_fortes": [
+    "pejotiza[cç][aã]o",
+    "pejotizad[oa]",
+    "art\\.? ?442-b",
+    "artigo 442-b"
+  ],
+  "marcadores_positivos": [
+    "pessoa jur[ií]dica",
+    "subordina[cç][aã]o",
+    "primazia da realidade",
+    "reconhecimento de v[ií]nculo",
+    "v[ií]nculo empregat[ií]cio",
+    "v[ií]nculo de emprego",
+    "rela[cç][aã]o de emprego",
+    "fraude",
+    "presta[cç][aã]o de servi[cç]os"
+  ],
+  "pesos": {
+    "marcador_forte": 3,
+    "marcador_positivo": 1,
+    "profissao_em_contexto": 2,
+    "colocacao_negativa": -1
+  },
+  "limiares": {
+    "incluir": 5,
+    "revisar": 2
+  }
+}

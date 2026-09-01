@@ -1,0 +1,81 @@
+{
+  "AVISO": "DADOS SINTÉTICOS criados exclusivamente para testar o pipeline. NÃO são processos nem decisões reais. Números CNJ fictícios; textos redigidos apenas para exercitar as regras de classificação. Jamais usar como dado de pesquisa.",
+  "processos": [
+    {
+      "numero": "0001111-22.2023.5.04.0001",
+      "tribunal": "TST",
+      "grau": "SUP",
+      "classe_codigo": "0",
+      "classe_nome": "Recurso de Revista",
+      "assuntos": [{"codigo": "0", "nome": "Reconhecimento de Relação de Emprego"}],
+      "orgao_julgador": "Órgão fictício de teste",
+      "data_ajuizamento": "2023-03-10",
+      "timestamp_fonte": "2024-01-05T10:00:00.000Z",
+      "texto_sintetico": "TEXTO SINTÉTICO DE TESTE. A médica prestava serviços ao hospital de forma contínua, com escala fixa e subordinação ao diretor clínico, contratada como pessoa jurídica. Aplicando o princípio da primazia da realidade e afastando a incidência do art. 442-B da CLT, reconhece-se o vínculo empregatício, caracterizada a pejotização fraudulenta.",
+      "rotulo_esperado_semantica": "incluido"
+    },
+    {
+      "numero": "0002222-33.2022.5.02.0002",
+      "tribunal": "TST",
+      "grau": "SUP",
+      "classe_codigo": "0",
+      "classe_nome": "Agravo de Instrumento em Recurso de Revista",
+      "assuntos": [{"codigo": "0", "nome": "Reconhecimento de Relação de Emprego"}],
+      "orgao_julgador": "Órgão fictício de teste",
+      "data_ajuizamento": "2022-08-01",
+      "timestamp_fonte": "2024-02-01T09:00:00.000Z",
+      "texto_sintetico": "TEXTO SINTÉTICO DE TESTE. O reclamante, auxiliar de produção, apresentou atestado médico para justificar as faltas. Realizada perícia médica, concluiu-se pela ausência de incapacidade. A controvérsia limita-se às horas extras e ao adicional noturno.",
+      "rotulo_esperado_semantica": "excluido"
+    },
+    {
+      "numero": "0003333-44.2021.5.01.0003",
+      "tribunal": "TST",
+      "grau": "SUP",
+      "classe_codigo": "0",
+      "classe_nome": "Recurso de Revista",
+      "assuntos": [{"codigo": "0", "nome": "Vínculo Empregatício"}],
+      "orgao_julgador": "Órgão fictício de teste",
+      "data_ajuizamento": "2021-05-20",
+      "timestamp_fonte": "2024-03-01T09:00:00.000Z",
+      "texto_sintetico": "TEXTO SINTÉTICO DE TESTE. O enfermeiro trabalhava no centro cirúrgico mediante contrato de prestação de serviços com empresa interposta. Demonstrada a subordinação jurídica e a pessoalidade, e em atenção à primazia da realidade, impõe-se o reconhecimento de vínculo, evidenciada a fraude na contratação por pessoa jurídica.",
+      "rotulo_esperado_semantica": "incluido"
+    },
+    {
+      "numero": "0003333-44.2021.5.01.0003",
+      "tribunal": "TRT1",
+      "grau": "G2",
+      "classe_codigo": "0",
+      "classe_nome": "Recurso Ordinário Trabalhista",
+      "assuntos": [{"codigo": "0", "nome": "Vínculo Empregatício"}],
+      "orgao_julgador": "Órgão fictício de teste",
+      "data_ajuizamento": "2021-05-20",
+      "timestamp_fonte": "2023-11-10T09:00:00.000Z",
+      "observacao": "mesma numeração do registro anterior — exercita a deduplicação entre instâncias"
+    },
+    {
+      "numero": "0004444-55.2020.5.03.0004",
+      "tribunal": "TST",
+      "grau": "SUP",
+      "classe_codigo": "0",
+      "classe_nome": "Embargos de Declaração",
+      "assuntos": [{"codigo": "0", "nome": "Multa Cominatória / Astreintes"}],
+      "orgao_julgador": "Órgão fictício de teste",
+      "data_ajuizamento": "2020-02-14",
+      "timestamp_fonte": "2024-04-01T09:00:00.000Z",
+      "observacao": "classe e assunto fora dos critérios — deve ser barrado no pré-filtro estrutural"
+    },
+    {
+      "numero": "0005555-66.2019.5.05.0005",
+      "tribunal": "TST",
+      "grau": "SUP",
+      "classe_codigo": "0",
+      "classe_nome": "Recurso de Revista",
+      "assuntos": [{"codigo": "0", "nome": "Reconhecimento de Relação de Emprego"}],
+      "orgao_julgador": "Órgão fictício de teste",
+      "data_ajuizamento": "2019-09-09",
+      "timestamp_fonte": "2024-05-01T09:00:00.000Z",
+      "texto_sintetico": "TEXTO SINTÉTICO DE TESTE. Discute-se o vínculo de emprego de representante comercial autônomo do ramo de cosméticos. Não há qualquer menção a profissional de saúde; o pedido de reembolso de despesas médicas do plano de saúde foi julgado improcedente.",
+      "rotulo_esperado_semantica": "excluido"
+    }
+  ]
+}

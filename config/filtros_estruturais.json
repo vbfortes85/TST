@@ -1,0 +1,19 @@
+{
+  "versao": "0.1.0",
+  "descricao": "Pré-filtro estrutural (camada 2 do pipeline, PRD §7). Reduz volume antes da análise textual, mas não decide sozinho: o preenchimento da TPU é inconsistente entre tribunais (PRD §7 e §13), por isso toda exclusão fica registrada e é reversível. Os padrões abaixo operam sobre os NOMES de classe/assunto retornados pelo DataJud; a lista de códigos TPU inicia vazia de propósito e deve ser preenchida a partir da agregação de códigos observados em dados reais, validada com a coordenação acadêmica — nenhum código foi pré-assumido.",
+  "classes_aceitas_padroes": [
+    "recurso de revista",
+    "agravo de instrumento em recurso de revista"
+  ],
+  "aplicar_filtro_classe": true,
+  "assuntos_padroes_incluir": [
+    "reconhecimento de rela[cç][aã]o de emprego",
+    "v[ií]nculo"
+  ],
+  "assuntos_codigos_incluir": [],
+  "aplicar_filtro_assunto": true,
+  "janela_temporal": {
+    "inicio": "2017-11-11",
+    "justificativa": "Entrada em vigor da Lei 13.467/2017 (art. 442-B da CLT) — marco normativo da pesquisa (PRD §6.1)."
+  }
+}

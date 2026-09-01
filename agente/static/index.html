@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente de Coleta Jurisprudencial — Pejotização em Saúde</title>
+<style>
+  :root { --tinta:#2b2620; --fundo:#f7f4ee; --cartao:#fffdf9; --borda:#e2dbcf;
+          --realce:#8a4b23; --ok:#2e6b41; --alerta:#a05c12; --erro:#9c3325; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 Georgia, 'Times New Roman', serif;
+         color:var(--tinta); background:var(--fundo); }
+  header { padding:20px 28px 12px; border-bottom:2px solid var(--tinta); }
+  header h1 { margin:0; font-size:21px; }
+  header p { margin:4px 0 0; font-size:13px; color:#6b6255; }
+  nav { display:flex; gap:2px; padding:0 28px; border-bottom:1px solid var(--borda);
+        background:var(--cartao); flex-wrap:wrap; }
+  nav button { border:none; background:none; padding:10px 14px; cursor:pointer;
+               font:inherit; font-size:14px; border-bottom:3px solid transparent; }
+  nav button.ativa { border-bottom-color:var(--realce); font-weight:bold; }
+  main { padding:20px 28px; max-width:1200px; }
+  section { display:none; }
+  section.ativa { display:block; }
+  .cartao { background:var(--cartao); border:1px solid var(--borda);
+            border-radius:6px; padding:16px 18px; margin-bottom:16px; }
+  .cartao h2 { margin:0 0 10px; font-size:16px; }
+  label { display:block; font-size:13px; margin:8px 0 2px; color:#5a5347; }
+  input, select, textarea { font:inherit; font-size:14px; padding:6px 8px;
+        border:1px solid var(--borda); border-radius:4px; background:#fff; width:100%;
+        max-width:420px; }
+  textarea { max-width:640px; }
+  button.acao { margin-top:12px; padding:8px 18px; font:inherit; font-size:14px;
+        background:var(--tinta); color:var(--fundo); border:none; border-radius:4px;
+        cursor:pointer; }
+  button.acao:disabled { opacity:.5; cursor:wait; }
+  button.mini { font-size:12px; padding:2px 8px; margin:0 2px; cursor:pointer;
+        border:1px solid var(--borda); background:#fff; border-radius:3px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; background:#fff; }
+  th, td { border:1px solid var(--borda); padding:5px 8px; text-align:left;
+        vertical-align:top; }
+  th { background:#efe9df; }
+  .tabela-rolagem { overflow-x:auto; }
+  .selo { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; }
+  .selo.incluido { background:#dcebe0; color:var(--ok); }
+  .selo.excluido { background:#f0dcd8; color:var(--erro); }
+  .selo.revisar, .selo.aguardando_texto { background:#f3e6cf; color:var(--alerta); }
+  .selo.pendente_credencial { background:#e8e2f2; color:#4a3f7a; }
+  pre { background:#f1ede5; border:1px solid var(--borda); padding:10px;
+        font-size:12px; overflow-x:auto; white-space:pre-wrap; }
+  .aviso { border-left:4px solid var(--alerta); padding:8px 12px; background:#f9efdd;
+        font-size:13px; margin:10px 0; }
+  .saida { margin-top:10px; font-size:13px; }
+  details summary { cursor:pointer; font-size:12px; color:var(--realce); }
+  .metricas-grade { display:flex; gap:16px; flex-wrap:wrap; }
+  .metrica { border:1px solid var(--borda); border-radius:6px; padding:12px 18px;
+        background:#fff; min-width:180px; }
+  .metrica .num { font-size:26px; font-weight:bold; }
+  .lado-a-lado { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .lado-a-lado > div { flex:1; min-width:320px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Agente de Coleta e Filtragem Jurisprudencial — Pejotização nos Serviços de Saúde</h1>
+  <p>Protótipo funcional (PRD v0.1) · Edital TST 01/2026, Eixo III · pipeline
+     DataJud → pré-filtro estrutural → Judit (inteiro teor) → classificação semântica
+     → dedup → exportação, com trilha de auditoria integral.</p>
+</header>
+<nav id="abas">
+  <button data-aba="painel" class="ativa">Painel</button>
+  <button data-aba="coleta">1 · Coleta (DataJud)</button>
+  <button data-aba="base">2 · Base &amp; Filtros</button>
+  <button data-aba="teor">3 · Inteiro teor (Judit)</button>
+  <button data-aba="validacao">4 · Revisão &amp; Métricas</button>
+  <button data-aba="entrega">5 · Exportação</button>
+  <button data-aba="aud">6 · Auditoria &amp; Caderno</button>
+</nav>
+<main>
+
+<section id="painel" class="ativa">
+  <div class="cartao"><h2>Estado do agente</h2><div id="painel-conteudo">Carregando…</div></div>
+  <div class="cartao"><h2>O que este protótipo cumpre (entregas do PRD §7)</h2>
+    <ol style="font-size:14px">
+      <li><b>Ingestão</b> — API pública do DataJud (TST e TRT1–24), paginação e rate limit.</li>
+      <li><b>Pré-filtro estrutural</b> — classe processual + assuntos TPU, critérios versionados em <code>config/filtros_estruturais.json</code>.</li>
+      <li><b>Classificação semântica</b> — heurística auditável que distingue “o médico prestava serviços” de “atestado médico”; camada LLM opcional.</li>
+      <li><b>Deduplicação entre instâncias</b> — agrupamento pelo número CNJ único, aparição canônica pelo grau mais alto.</li>
+      <li><b>Entrega/exportação</b> — planilha CSV (registro por acórdão, PRD §6.1) e JSONL completo.</li>
+      <li><b>Atualização incremental</b> — nova coleta captura apenas decisões posteriores ao último <code>@timestamp</code> visto.</li>
+      <li><b>Rastreabilidade (Produto 2)</b> — auditoria integral + geração do rascunho do Caderno Técnico a partir dos registros reais.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="coleta">
+  <div class="cartao">
+    <h2>Etapa 1 — Coleta no DataJud (gratuita, “atacado”)</h2>
+    <label>Tribunal</label><select id="c-tribunal"></select>
+    <label>Máximo de páginas (cada página ≤ 100 processos)</label>
+    <input id="c-paginas" type="number" value="2" min="1" max="100">
+    <label>Pesquisador(a) responsável (registro por sessão, PRD §6.1)</label>
+    <input id="c-pesquisador" placeholder="nome de quem executa a busca">
+    <div>
+      <button class="acao" id="btn-coleta">Executar coleta</button>
+      <button class="acao" id="btn-incremental" style="background:#5a5347">
+        Atualização incremental (só decisões novas)</button>
+    </div>
+    <div class="saida" id="c-saida"></div>
+    <div class="aviso">Os critérios da consulta (janela temporal desde 11/11/2017,
+      padrões de classe e assunto) vêm de <code>config/filtros_estruturais.json</code>
+      e ficam gravados na auditoria de cada sessão. Se a rede local bloquear o
+      DataJud, o erro é registrado e exibido — nenhum dado é inventado.</div>
+  </div>
+</section>
+
+<section id="base">
+  <div class="cartao">
+    <h2>Base coletada, pré-filtro estrutural e classificação semântica</h2>
+    <button class="acao" id="btn-classificar">Rodar classificação semântica</button>
+    <label style="display:inline-block;margin-left:14px">
+      <input type="checkbox" id="cls-metadados" style="width:auto"> classificar também
+      sobre metadados quando faltar o inteiro teor (teto: “revisar”)</label>
+    <label style="display:inline-block;margin-left:14px">
+      <input type="checkbox" id="cls-llm" style="width:auto"> usar segunda opinião via
+      LLM (se configurado)</label>
+    <div class="saida" id="b-saida"></div>
+    <div class="tabela-rolagem" style="margin-top:12px">
+      <table id="tab-processos"><thead><tr>
+        <th>Nº CNJ</th><th>Trib.</th><th>Grau</th><th>Classe</th><th>Assuntos</th>
+        <th>Filtro estrutural</th><th>Semântica</th><th>Score</th><th>Teor</th><th>Motivos</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+  <div class="cartao">
+    <h2>Casos deduplicados (mesmo processo em instâncias diferentes)</h2>
+    <div class="tabela-rolagem"><table id="tab-casos"><thead><tr>
+      <th>Nº CNJ</th><th>Grau canônico</th><th>Aparições</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<section id="teor">
+  <div class="cartao">
+    <h2>Etapa 2 — Inteiro teor via Judit.io (paga, “varejo, um por um”)</h2>
+    <p style="font-size:13px">Uma chamada paga por processo aprovado no pré-filtro
+      (aparição canônica de cada caso deduplicado — não se paga duas vezes pelo mesmo
+      caso). Sem <code>JUDIT_API_KEY</code>, as solicitações ficam registradas como
+      <span class="selo pendente_credencial">pendente_credencial</span> e nenhum
+      documento é simulado.</p>
+    <label>Limite de solicitações nesta rodada (controle de custo)</label>
+    <input id="t-limite" type="number" value="5" min="1" max="1000">
+    <button class="acao" id="btn-extrair">Solicitar inteiro teor</button>
+    <button class="acao" id="btn-respostas" style="background:#5a5347">
+      Buscar respostas pendentes</button>
+    <div class="saida" id="t-saida"></div>
+  </div>
+  <div class="cartao">
+    <h2>Registrar inteiro teor obtido manualmente (PoC Jusbrasil, PRD §6.1)</h2>
+    <label>ID interno do processo (coluna da aba 2)</label>
+    <input id="m-processo" type="number" placeholder="ex.: 1">
+    <label>Origem declarada</label>
+    <input id="m-origem" placeholder="ex.: Jusbrasil, busca manual de 01/09/2026">
+    <label>Texto integral da decisão</label>
+    <textarea id="m-texto" rows="8" placeholder="cole aqui o texto do acórdão"></textarea>
+    <button class="acao" id="btn-manual">Registrar texto</button>
+    <div class="saida" id="m-saida"></div>
+  </div>
+</section>
+
+<section id="validacao">
+  <div class="cartao">
+    <h2>Métricas de validação (PRD §5 e §10)</h2>
+    <div class="metricas-grade" id="v-metricas">Carregando…</div>
+    <div class="saida" id="v-gonogo"></div>
+  </div>
+  <div class="lado-a-lado">
+    <div class="cartao">
+      <h2>Revisão humana dos incluídos (precisão)</h2>
+      <label>Revisor(a)</label><input id="v-revisor" placeholder="nome">
+      <div class="tabela-rolagem" style="margin-top:8px"><table id="tab-revisao">
+        <thead><tr><th>ID</th><th>Nº CNJ</th><th>Semântica</th><th>Rótulo</th><th>Ação</th></tr></thead>
+        <tbody></tbody></table></div>
+    </div>
+    <div class="cartao">
+      <h2>Amostra de controle (cobertura)</h2>
+      <p style="font-size:13px">Números CNJ sabidamente relevantes (ex.: achados da
+        PoC manual). A cobertura mede quantos deles o agente capturou e incluiu.</p>
+      <label>Números CNJ (um por linha)</label>
+      <textarea id="v-controle" rows="5" placeholder="0000000-00.0000.5.00.0000"></textarea>
+      <label>Origem</label><input id="v-controle-origem" placeholder="ex.: PoC Jusbrasil">
+      <button class="acao" id="btn-controle">Adicionar à amostra</button>
+      <div class="saida" id="v-controle-saida"></div>
+    </div>
+  </div>
+</section>
+
+<section id="entrega">
+  <div class="cartao">
+    <h2>Exportação (alimenta Produtos 3 e 4)</h2>
+    <button class="acao" id="btn-csv">Exportar planilha CSV</button>
+    <button class="acao" id="btn-jsonl" style="background:#5a5347">Exportar JSONL completo</button>
+    <div class="saida" id="e-saida"></div>
+  </div>
+</section>
+
+<section id="aud">
+  <div class="cartao">
+    <h2>Caderno Técnico de Uso de IA (rascunho gerado — Produto 2)</h2>
+    <button class="acao" id="btn-caderno">Gerar rascunho a partir dos registros</button>
+    <div class="saida" id="a-caderno-saida"></div>
+    <pre id="a-caderno" style="display:none"></pre>
+  </div>
+  <div class="cartao">
+    <h2>Trilha de auditoria (últimos eventos)</h2>
+    <button class="acao" id="btn-auditoria" style="background:#5a5347">Atualizar</button>
+    <div class="tabela-rolagem" style="margin-top:10px"><table id="tab-auditoria">
+      <thead><tr><th>Quando (UTC)</th><th>Evento</th><th>Pipeline</th><th>Config</th><th>Detalhes</th></tr></thead>
+      <tbody></tbody></table></div>
+  </div>
+</section>
+
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const abas = document.querySelectorAll('nav button');
+abas.forEach(b => b.onclick = () => {
+  abas.forEach(x => x.classList.remove('ativa'));
+  document.querySelectorAll('main section').forEach(s => s.classList.remove('ativa'));
+  b.classList.add('ativa');
+  document.getElementById(b.dataset.aba).classList.add('ativa');
+  if (b.dataset.aba === 'painel') carregarPainel();
+  if (b.dataset.aba === 'base') { carregarProcessos(); carregarCasos(); }
+  if (b.dataset.aba === 'validacao') { carregarMetricas(); carregarRevisao(); }
+  if (b.dataset.aba === 'aud') carregarAuditoria();
+});
+
+async function api(rota, corpo) {
+  const opts = corpo ? {method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify(corpo)} : {};
+  const r = await fetch(rota, opts);
+  const dados = await r.json();
+  if (!r.ok) throw new Error(dados.erro || r.status);
+  return dados;
+}
+function selo(v){ return v ? `<span class="selo ${v}">${v}</span>` : '—'; }
+function esc(t){ const d=document.createElement('div'); d.textContent=t??''; return d.innerHTML; }
+
+async function carregarPainel(){
+  try{
+    const s = await api('/api/status');
+    const sel = $('#c-tribunal');
+    if (!sel.options.length)
+      s.tribunais.forEach(t => sel.add(new Option(t, t, t==='TST', t==='TST')));
+    $('#painel-conteudo').innerHTML = `
+      <div class="metricas-grade">
+        <div class="metrica"><div class="num">${s.total_processos}</div>registros de processo</div>
+        <div class="metrica"><div class="num">${s.total_casos_deduplicados}</div>casos únicos (dedup)</div>
+        <div class="metrica"><div class="num">${s.eventos_auditoria}</div>eventos de auditoria</div>
+      </div>
+      <p style="font-size:13px">Pipeline v${esc(s.versao_pipeline)} · hash da configuração
+      <code>${esc(s.hash_config)}</code><br>
+      Filtro estrutural: ${Object.entries(s.classificacoes.estrutural||{}).map(([k,v])=>`${selo(k)} ${v}`).join(' · ')||'—'}<br>
+      Semântica: ${Object.entries(s.classificacoes.semantica||{}).map(([k,v])=>`${selo(k)} ${v}`).join(' · ')||'—'}<br>
+      Documentos (Etapa 2): ${Object.entries(s.documentos||{}).map(([k,v])=>`${selo(k)} ${v}`).join(' · ')||'—'}<br>
+      Credencial Judit: <b>${s.judit_credencial?'configurada':'ausente'}</b> ·
+      LLM opcional: <b>${s.llm_disponivel?'disponível':'não configurado'}</b></p>`;
+  }catch(e){ $('#painel-conteudo').textContent = 'Erro: '+e.message; }
+}
+
+async function executar(botao, rota, corpo, saida, aposta){
+  const b=$(botao), o=$(saida);
+  b.disabled=true; o.textContent='Executando…';
+  try{ const r=await api(rota,corpo); o.innerHTML='<pre>'+esc(JSON.stringify(r,null,2))+'</pre>';
+       if(aposta) aposta(r); }
+  catch(e){ o.innerHTML='<span style="color:var(--erro)">Erro: '+esc(e.message)+'</span>'; }
+  b.disabled=false; carregarPainel();
+}
+
+$('#btn-coleta').onclick = () => executar('#btn-coleta','/api/coleta',{
+  tribunal:$('#c-tribunal').value, max_paginas:+$('#c-paginas').value,
+  pesquisador:$('#c-pesquisador').value}, '#c-saida');
+$('#btn-incremental').onclick = () => executar('#btn-incremental','/api/coleta',{
+  tribunal:$('#c-tribunal').value, max_paginas:+$('#c-paginas').value,
+  pesquisador:$('#c-pesquisador').value, incremental:true}, '#c-saida');
+$('#btn-classificar').onclick = () => executar('#btn-classificar','/api/classificacao',{
+  usar_metadados:$('#cls-metadados').checked, usar_llm:$('#cls-llm').checked},
+  '#b-saida', ()=>{carregarProcessos();});
+$('#btn-extrair').onclick = () => executar('#btn-extrair','/api/extracao',
+  {limite:+$('#t-limite').value}, '#t-saida');
+$('#btn-respostas').onclick = () => executar('#btn-respostas','/api/extracao/respostas',
+  {}, '#t-saida');
+$('#btn-manual').onclick = () => executar('#btn-manual','/api/texto-manual',{
+  processo_id:+$('#m-processo').value, texto:$('#m-texto').value,
+  origem:$('#m-origem').value}, '#m-saida');
+$('#btn-controle').onclick = () => executar('#btn-controle','/api/controle',{
+  numeros:$('#v-controle').value.split('\n').map(x=>x.trim()).filter(Boolean),
+  origem:$('#v-controle-origem').value}, '#v-controle-saida', carregarMetricas);
+$('#btn-csv').onclick = () => executar('#btn-csv','/api/exportacao',{formato:'csv'},'#e-saida');
+$('#btn-jsonl').onclick = () => executar('#btn-jsonl','/api/exportacao',{formato:'jsonl'},'#e-saida');
+$('#btn-caderno').onclick = async () => {
+  try{ const r=await api('/api/caderno',{});
+       $('#a-caderno-saida').textContent='Gravado em '+r.arquivo;
+       const pre=$('#a-caderno'); pre.style.display='block'; pre.textContent=r.conteudo; }
+  catch(e){ $('#a-caderno-saida').textContent='Erro: '+e.message; }
+};
+$('#btn-auditoria').onclick = carregarAuditoria;
+
+function motivosHtml(l){
+  const blocos=[];
+  if(l.estrutural_motivos) blocos.push('<b>estrutural:</b> '+esc(JSON.stringify(l.estrutural_motivos)));
+  if(l.semantica_motivos) blocos.push('<b>semântica:</b> '+esc(JSON.stringify(l.semantica_motivos)));
+  if(l.semantica_llm) blocos.push('<b>LLM:</b> '+selo(l.semantica_llm));
+  if(!blocos.length) return '—';
+  return `<details><summary>ver</summary><div style="max-width:420px;font-size:12px">${blocos.join('<hr>')}</div></details>`;
+}
+async function carregarProcessos(){
+  const linhas = await api('/api/processos?limite=300');
+  $('#tab-processos tbody').innerHTML = linhas.map(l=>`<tr>
+    <td>${esc(l.numero_formatado)}<br><small>id ${l.id}</small></td>
+    <td>${esc(l.tribunal)}</td><td>${esc(l.grau)}</td><td>${esc(l.classe_nome)}</td>
+    <td style="max-width:220px">${l.assuntos.map(esc).join('; ')}</td>
+    <td>${selo(l.estrutural)}</td><td>${selo(l.semantica)}</td>
+    <td>${l.score??'—'}</td><td>${selo(l.documento)}</td><td>${motivosHtml(l)}</td>
+  </tr>`).join('') || '<tr><td colspan="10">Base vazia — execute a coleta na aba 1.</td></tr>';
+}
+async function carregarCasos(){
+  const casos = await api('/api/casos');
+  $('#tab-casos tbody').innerHTML = casos.map(c=>`<tr>
+    <td>${esc(c.numero_formatado)}</td><td>${esc(c.grau_canonico)}</td>
+    <td>${c.aparicoes.map(a=>esc(`${a.tribunal}/${a.grau} (id ${a.id})`)).join(' · ')}</td>
+  </tr>`).join('') || '<tr><td colspan="3">Nenhum caso na base.</td></tr>';
+}
+async function carregarMetricas(){
+  const m = await api('/api/metricas');
+  const pct = v => v==null ? 'sem dados' : (v*100).toFixed(1)+'%';
+  $('#v-metricas').innerHTML = `
+    <div class="metrica"><div class="num">${pct(m.precisao.valor)}</div>precisão
+      <br><small>${m.precisao.verdadeiros_positivos}/${m.precisao.total_revisados} revisados · mínimo ${(m.precisao.minimo_exigido*100)}%</small></div>
+    <div class="metrica"><div class="num">${pct(m.cobertura.filtro)}</div>cobertura (filtro)
+      <br><small>${m.cobertura.incluidos_pelo_filtro}/${m.cobertura.total_amostra_controle} da amostra · mínimo ${(m.cobertura.minimo_exigido*100)}%</small></div>
+    <div class="metrica"><div class="num">${pct(m.cobertura.captura)}</div>cobertura (captura na base)</div>`;
+  const g = m.go_no_go_fase3;
+  $('#v-gonogo').innerHTML = (g.resultado===null
+    ? '<div class="aviso">Go/no-go da Fase 3: ainda sem dados suficientes.</div>'
+    : g.resultado
+      ? '<div class="aviso" style="border-color:var(--ok)">Go/no-go da Fase 3: critérios ATENDIDOS.</div>'
+      : '<div class="aviso" style="border-color:var(--erro)">Go/no-go da Fase 3: critérios NÃO atendidos.</div>')
+    + (g.aviso ? `<div class="aviso">${esc(g.aviso)}</div>` : '');
+}
+async function carregarRevisao(){
+  const linhas = (await api('/api/processos?limite=300'))
+    .filter(l => l.semantica==='incluido' || l.semantica==='revisar');
+  $('#tab-revisao tbody').innerHTML = linhas.map(l=>`<tr>
+    <td>${l.id}</td><td>${esc(l.numero_formatado)}</td><td>${selo(l.semantica)}</td>
+    <td>${selo(l.revisao)||'—'}</td>
+    <td><button class="mini" onclick="revisar(${l.id},'relevante')">relevante</button>
+        <button class="mini" onclick="revisar(${l.id},'irrelevante')">irrelevante</button></td>
+  </tr>`).join('') || '<tr><td colspan="5">Nenhum processo incluído/para revisar ainda.</td></tr>';
+}
+async function revisar(id, rotulo){
+  await api('/api/revisao',{processo_id:id, rotulo, revisor:$('#v-revisor').value});
+  carregarRevisao(); carregarMetricas();
+}
+async function carregarAuditoria(){
+  const eventos = await api('/api/auditoria?limite=100');
+  $('#tab-auditoria tbody').innerHTML = eventos.map(e=>`<tr>
+    <td>${esc(e.registrada_em)}</td><td>${esc(e.evento)}</td>
+    <td>${esc(e.versao_pipeline)}</td><td><code>${esc(e.hash_config)}</code></td>
+    <td><details><summary>ver</summary><pre>${esc(JSON.stringify(e.detalhes,null,1))}</pre></details></td>
+  </tr>`).join('') || '<tr><td colspan="5">Nenhum evento registrado.</td></tr>';
+}
+carregarPainel();
+</script>
+</body>
+</html>
